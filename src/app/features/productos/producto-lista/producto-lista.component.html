@@ -1,0 +1,298 @@
+<div class="container-fluid px-4 mt-4 d-flex gap-2">
+  <button type="button" class="btn d-flex align-items-center gap-2 shadow-sm"
+    [ngClass]="soloStockBajo() ? 'btn-warning' : 'btn-light'" (click)="alternarStockBajo()"
+    [attr.aria-pressed]="soloStockBajo()">
+    <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>
+    <span>{{ soloStockBajo() ? 'Ver todos' : 'Stock bajo' }}</span>
+    @if (totalStockBajo() > 0) {
+    <span class="badge bg-danger rounded-pill">{{ totalStockBajo() }}</span>
+    }
+  </button>
+
+  @if (puedeGestionar()) {
+  <button type="button" class="btn btn-primary ms-auto d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal"
+    data-bs-target="#modalRegistroPro" (click)="prepararNuevo()">
+    <i class="bi bi-box-seam" aria-hidden="true"></i>
+    <span>Agregar Producto</span>
+  </button>
+  }
+</div>
+
+<div class="container-fluid mt-4">
+  <h2 class="text-white text-center mt-4 mb-3 fw-bold">Listado General de Productos</h2>
+
+  <app-buscador [placeholder]="'Buscar por código, nombre, categoría o marca...'"
+    (alBuscar)="filtrarProductos($event)">
+  </app-buscador>
+
+  @if (errorMessage()) {
+  <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ errorMessage() }}</span>
+  </div>
+  }
+
+  <div class="card shadow-sm border-0 overflow-hidden rounded-3">
+    <div class="table-responsive">
+      <table id="tablaProducto" class="table table-hover table-sm text-nowrap align-middle mb-0">
+        <thead class="table-light text-uppercase fs-7 border-bottom text-secondary">
+          <tr>
+            <th scope="col" class="py-2 ps-3">Código</th>
+            <th scope="col" class="py-2">Producto</th>
+            <th scope="col" class="py-2">Categoría</th>
+            <th scope="col" class="py-2">Marca</th>
+            <th scope="col" class="text-end py-2">P. Compra</th>
+            <th scope="col" class="text-end py-2">P. Venta</th>
+            <th scope="col" class="text-end py-2">Margen</th>
+            <th scope="col" class="text-end py-2">Stock</th>
+            <th scope="col" class="text-end py-2">Mínimo</th>
+            <th scope="col" class="py-2">Estado</th>
+            @if (puedeGestionar()) {
+            <th scope="col" class="text-end py-2 pe-4">Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+          <tr>
+            <td colspan="10" class="text-center py-4 text-secondary">
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              Cargando productos...
+            </td>
+          </tr>
+          } @else {
+          @for (p of productosFiltrados(); track p.id_producto) {
+          <tr class="border-bottom" [class.opacity-50]="p.estado === 'INACTIVO'">
+            <td class="ps-3 font-monospace fw-semibold text-secondary">{{ p.codigo }}</td>
+            <td class="celda-producto">
+              <div class="text-dark fw-semibold text-truncate">{{ p.nombre }}</div>
+              @if (p.descripcion) {
+              <div class="text-secondary small text-truncate">{{ p.descripcion }}</div>
+              }
+            </td>
+            <td class="text-dark">{{ p.categoria }}</td>
+            <td class="text-secondary">{{ p.marca }}</td>
+            <td class="text-end text-secondary">S/ {{ p.precio_compra | number:'1.2-2' }}</td>
+            <td class="text-end text-dark fw-semibold">S/ {{ p.precio_venta | number:'1.2-2' }}</td>
+            <td class="text-end fw-semibold" [class.text-success]="margenDe(p) >= 0" [class.text-danger]="margenDe(p) < 0">
+                  {{ margenDe(p) | number:'1.0-1' }}%
+            </td>            
+            <td class="text-end">
+              <span class="badge py-1 px-2" [ngClass]="{
+                  'bg-success-subtle text-success border border-success-subtle': p.nivel_stock === 'OK',
+                  'bg-warning-subtle text-warning-emphasis border border-warning-subtle': p.nivel_stock === 'STOCK_MINIMO',
+                  'bg-danger-subtle text-danger border border-danger-subtle': p.nivel_stock === 'AGOTADO'
+                }">
+                {{ p.stock_actual | number:'1.0-3' }} {{ p.unidad_codigo }}
+              </span>
+            </td>
+            <td class="text-end text-muted small">{{ p.stock_minimo | number:'1.0-0' }}</td>
+            <td>
+              <span class="badge py-1 px-2" [ngClass]="{
+                    'bg-success-subtle text-success border border-success-subtle': p.estado === 'ACTIVO',
+                    'bg-danger-subtle text-danger border border-danger-subtle': p.estado === 'INACTIVO'
+                  }">
+                {{ p.estado }}
+              </span>
+            </td>
+            @if (puedeGestionar()) {
+            <td class="text-end pe-4">
+              <div class="d-inline-flex gap-1">
+                <button type="button"
+                  class="btn btn-sm btn-light border text-dark d-flex align-items-center gap-1 px-2 shadow-sm"
+                  data-bs-toggle="modal" data-bs-target="#modalRegistroPro" (click)="editarProducto(p)">
+                  <i class="bi bi-pencil-square text-warning" aria-hidden="true"></i>
+                  <span>Editar</span>
+                </button>
+                <button type="button" class="btn btn-sm d-flex align-items-center gap-1 px-2 shadow-sm"
+                  [ngClass]="p.estado === 'ACTIVO' ? 'btn-outline-secondary' : 'btn-outline-success'"
+                  (click)="cambiarEstado(p)">
+                  <i class="bi" [ngClass]="p.estado === 'ACTIVO' ? 'bi-toggle-off' : 'bi-toggle-on'"></i>
+                  <span>{{ p.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</span>
+                </button>
+                <button type="button"
+                  class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 px-2 shadow-sm"
+                  (click)="eliminarProducto(p)">
+                  <i class="bi bi-trash3" aria-hidden="true"></i>
+                  <span>Borrar</span>
+                </button>
+              </div>
+            </td>
+            }
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="10" class="text-center py-5 bg-light">
+              <div class="d-flex flex-column align-items-center justify-content-center py-3">
+                <div class="text-secondary bg-white shadow-sm rounded-circle p-3 mb-3">
+                  <i class="bi bi-box-seam fs-3 text-muted" aria-hidden="true"></i>
+                </div>
+                @if (termino() || soloStockBajo()) {
+                <h6 class="fw-bold text-dark mb-1">Ningún producto coincide con el filtro</h6>
+                } @else {
+                <h6 class="fw-bold text-dark mb-1">Aún no hay productos registrados</h6>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalRegistroPro" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-light border-bottom py-3">
+        <h5 class="modal-title fw-bold text-dark">
+          @if (productoParaEditar()) {
+          <i class="bi bi-pencil-square me-2 text-warning"></i>Editar Producto
+          } @else {
+          <i class="bi bi-box-seam me-2 text-primary"></i>Nuevo Producto
+          }
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        @if (errorFormulario()) {
+        <div class="alert alert-danger py-2">{{ errorFormulario() }}</div>
+        }
+
+        <form [formGroup]="productoForm" (ngSubmit)="guardarProducto()" autocomplete="off">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="row g-2">
+                <div class="col-4">
+                  <div class="form-floating mb-3">
+                    <input type="text" class="form-control bg-light" formControlName="id_producto" readonly />
+                    <label>ID</label>
+                  </div>
+                </div>
+                <div class="col-8">
+                  <div class="form-floating mb-3">
+                    <input type="text" class="form-control bg-light font-monospace" formControlName="codigo" readonly />
+                    <label>Código</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-floating mb-3">
+                <input type="text" class="form-control" formControlName="nombre" maxlength="150" />
+                <label>Nombre *</label>
+              </div>
+
+              <div class="form-floating mb-3">
+                <select class="form-select" formControlName="id_categoria">
+                  <option [ngValue]="null" disabled>Seleccione...</option>
+                  @for (c of categorias(); track c.id) {
+                  <option [ngValue]="c.id">{{ c.nombre }}</option>
+                  }
+                </select>
+                <label>Categoría *</label>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-7">
+                  <div class="form-floating mb-3">
+                    <select class="form-select" formControlName="id_marca">
+                      <option [ngValue]="null" disabled>Seleccione...</option>
+                      @for (m of marcas(); track m.id) {
+                      <option [ngValue]="m.id">{{ m.nombre }}</option>
+                      }
+                    </select>
+                    <label>Marca *</label>
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="form-floating mb-3">
+                    <select class="form-select" formControlName="id_unidad">
+                      <option [ngValue]="null" disabled>Seleccione...</option>
+                      @for (u of unidades(); track u.id) {
+                      <option [ngValue]="u.id">{{ u.nombre }}</option>
+                      }
+                    </select>
+                    <label>Unidad *</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-floating mb-3">
+                <textarea class="form-control" formControlName="descripcion" maxlength="300" style="height: 80px"></textarea>
+                <label>Descripción (opcional)</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="form-floating mb-3">
+                    <input type="number" class="form-control text-end" formControlName="precio_compra" min="0" step="0.01" />
+                    <label>P. Compra (S/) *</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-floating mb-3">
+                    <input type="number" class="form-control text-end" formControlName="precio_venta" min="0" step="0.01"
+                      [class.is-invalid]="ventaMenorQueCompra()" />
+                    <label>P. Venta (S/) *</label>
+                    <div class="invalid-feedback">No puede ser menor al precio de compra.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="es_promocion" formControlName="es_promocion" />
+                <label class="form-check-label" for="es_promocion">Es promoción (permite venta menor)</label>
+              </div>
+
+              @if (margen() !== null) {
+              <p class="small text-secondary mb-3">
+                <i class="bi bi-graph-up-arrow me-1"></i>
+                Margen sobre el costo: <strong>{{ margen() | number:'1.0-1' }}%</strong>
+              </p>
+              }
+
+              <div class="form-floating mb-3">
+                <input type="number" class="form-control text-end" formControlName="stock_minimo" min="0" step="1" />
+                <label>Stock mínimo (alerta) *</label>
+              </div>
+
+              <div class="border rounded-3 bg-light px-3 py-2 mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-boxes text-secondary"></i>
+                <div class="small">
+                  @if (productoParaEditar()) {
+                  <span class="text-secondary">Stock actual:</span>
+                  <strong>{{ productoParaEditar()?.stock_actual | number:'1.0-0' }} {{ productoParaEditar()?.unidad_codigo }}</strong>
+                  <div class="text-muted">Se modifica con compras, ventas o ajustes.</div>
+                  } @else {
+                  <span class="text-secondary">El producto inicia con stock 0.</span>
+                  <div class="text-muted">Registre una compra para darle ingreso.</div>
+                  }
+                </div>
+              </div>
+
+              <div class="form-floating mb-3">
+                <select class="form-select" formControlName="estado">
+                  <option value="ACTIVO">ACTIVO</option>
+                  <option value="INACTIVO">INACTIVO</option>
+                </select>
+                <label>Estado *</label>
+              </div>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+              <button type="button" class="btn btn-light px-4" (click)="resetearFormulario()">Limpiar</button>
+              <button type="submit" class="btn btn-primary px-4" [disabled]="productoForm.invalid || guardando()">
+                Guardar Producto
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
