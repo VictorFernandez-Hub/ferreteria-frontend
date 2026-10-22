@@ -1,4 +1,4 @@
-export const API_URL = 'http://localhost:8080/api';
+export const API_URL = 'https://ferreteria-backend-w2s1.onrender.com/api';
 
 export const ENDPOINTS = {
   AUTH: {
