@@ -29,6 +29,18 @@
           </li>
         }
 
+        @if (tieneRol(ROLES_INVENTARIO)) {
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/inventario" routerLinkActive="active">INVENTARIO</a>
+          </li>
+        }
+
+        @if (tieneRol(ROLES_KARDEX)) {
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/kardex" routerLinkActive="active">KARDEX</a>
+          </li>
+        }
+
         @if (tieneRol(ROLES_VENTAS)) {
           <li class="nav-item">
             <a class="nav-link" routerLink="/ventas" routerLinkActive="active">VENTAS</a>
