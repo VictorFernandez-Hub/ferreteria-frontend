@@ -39,6 +39,11 @@ export const routes: Routes = [
           .then(m => m.KardexListaComponent)
       },
       {
+        path: 'compras',
+        loadComponent: () => import('./features/compras')
+          .then(m => m.CompraListaComponent)
+      },
+      {
         path: 'usuarios',
         loadComponent: () => import('./features/usuarios')
           .then(m => m.UsuarioListaComponent)
